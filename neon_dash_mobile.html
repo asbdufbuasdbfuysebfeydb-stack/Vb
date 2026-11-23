@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#080d28">
+<title>Neon Dash - Mobile</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:radial-gradient(circle at 50% 10%,#17245a,#070b20 70%);color:#fff;font-family:system-ui,Arial,sans-serif;display:flex;justify-content:center;align-items:center;padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom)}
+.game{width:min(100%,960px);display:flex;flex-direction:column;align-items:center;gap:9px}
+h1{font-size:clamp(22px,5vw,34px);letter-spacing:4px;margin:0;text-shadow:0 0 18px #00eaff}
+.sub{margin:0;color:#a9c7ff;font-size:13px;text-align:center}
+canvas{width:100%;height:auto;display:block;border:2px solid #31eaff;border-radius:12px;background:#101a42;box-shadow:0 0 25px #00d9ff55;touch-action:none}
+.controls{width:100%;display:flex;align-items:center;justify-content:center;gap:12px}
+button{border:0;border-radius:16px;padding:13px 22px;min-height:54px;background:linear-gradient(100deg,#00d9ff,#8b5cff);color:#061026;font-size:16px;font-weight:900;touch-action:manipulation}
+#jump{flex:1;max-width:420px;font-size:19px;letter-spacing:2px;box-shadow:0 5px 0 #3040a0}
+#restart{background:#1c2a59;color:#d9f8ff;border:1px solid #3deaff;padding:12px 17px}
+.help{color:#c7d8ff;font-size:12px;text-align:center;margin:0}
+@media (max-height:520px) and (orientation:landscape){.game{width:min(88vw,960px);gap:4px}h1,.sub,.help{display:none}button{min-height:44px;padding:8px 18px}canvas{max-height:68vh;width:auto;max-width:100%}}
+</style>
+</head>
+<body>
+<main class="game">
+<h1>NEON DASH</h1>
+<p class="sub">Tap to jump • Avoid the spikes • Beat your best score</p>
+<canvas id="game" width="900" height="420"></canvas>
+<div class="controls">
+<button id="jump" aria-label="Jump">JUMP ▲</button>
+<button id="restart">RESTART</button>
+</div>
+<p class="help">You can also tap the game area to jump. On a computer: SPACE, ↑ or W.</p>
+</main>
+<script>
+(()=>{
+const c=document.getElementById('game'),ctx=c.getContext('2d'),W=900,H=420,floor=340;
+let p,obs,parts,speed,score,best=0,dead,frame,spawn;
+function reset(){p={x:125,y:306,size:34,vy:0,ground:true,rot:0};obs=[];parts=[];speed=5.6;score=0;dead=false;frame=0;spawn=65}
+function jump(){if(dead){reset();return}if(p.ground){p.vy=-13.8;p.ground=false;for(let i=0;i<7;i++)parts.push({x:p.x+10,y:floor-3,vx:-Math.random()*3,vy:-Math.random()*3-1,life:20})}}
+function act(e){if(e)e.preventDefault();jump()}
+c.addEventListener('pointerdown',act);
+document.getElementById('jump').addEventListener('pointerdown',act);
+document.getElementById('restart').addEventListener('click',e=>{e.preventDefault();reset()});
+window.addEventListener('keydown',e=>{if(['Space','ArrowUp','KeyW'].includes(e.code)){e.preventDefault();jump()}});
+function add(){let r=Math.random();if(r<.68)obs.push({x:W+20,w:34,h:38});else if(r<.9){obs.push({x:W+20,w:34,h:38},{x:W+76,w:34,h:38})}else obs.push({x:W+20,w:42,h:48})}
+function hit(o){let ax=p.x+5,bx=p.x+p.size-5,ay=p.y+5,by=p.y+p.size,ox=o.x+7,ex=o.x+o.w-7;return !(bx<ox||ax>ex)&&by>floor-o.h+8&&ay<floor}
+function background(){let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#14275b');g.addColorStop(1,'#080d28');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.strokeStyle='#27427c';ctx.lineWidth=1;let off=frame*speed*.35%45;for(let x=-off;x<W;x+=45){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,floor);ctx.stroke()}for(let y=25;y<floor;y+=45){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.fillStyle='#101b43';ctx.fillRect(0,floor,W,H-floor);ctx.fillStyle='#00eaff';ctx.fillRect(0,floor,W,4);ctx.fillStyle='#193c70';for(let x=-(frame*speed*.7%60);x<W;x+=60)ctx.fillRect(x,floor+24,28,5)}
+function draw(){background();for(const o of obs){ctx.save();ctx.shadowBlur=16;ctx.shadowColor='#ff3fa4';let g=ctx.createLinearGradient(o.x,floor-o.h,o.x,floor);g.addColorStop(0,'#ff9be1');g.addColorStop(1,'#ff287d');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(o.x,floor);ctx.lineTo(o.x+o.w/2,floor-o.h);ctx.lineTo(o.x+o.w,floor);ctx.closePath();ctx.fill();ctx.strokeStyle='#ffd7f1';ctx.lineWidth=2;ctx.stroke();ctx.restore()}for(const q of parts){ctx.globalAlpha=Math.max(0,q.life/20);ctx.fillStyle='#7ffaff';ctx.fillRect(q.x,q.y,4,4)}ctx.globalAlpha=1;if(!dead){ctx.save();ctx.translate(p.x+17,p.y+17);ctx.rotate(p.rot);ctx.shadowBlur=22;ctx.shadowColor='#00efff';let g=ctx.createLinearGradient(-17,-17,17,17);g.addColorStop(0,'#fff36a');g.addColorStop(1,'#ff7a35');ctx.fillStyle=g;ctx.fillRect(-17,-17,34,34);ctx.shadowBlur=0;ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(-17,-17,34,34);ctx.fillStyle='#17204b';ctx.fillRect(-8,-5,5,5);ctx.fillRect(4,-5,5,5);ctx.restore()}ctx.fillStyle='white';ctx.font='bold 20px system-ui';ctx.fillText('SCORE  '+Math.floor(score),22,34);ctx.font='14px system-ui';ctx.fillStyle='#a9c7ff';ctx.fillText('BEST  '+best,22,57);if(dead){ctx.fillStyle='#05091acc';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.shadowBlur=20;ctx.shadowColor='#00eaff';ctx.fillStyle='white';ctx.font='bold 48px system-ui';ctx.fillText('CRASH!',W/2,170);ctx.shadowBlur=0;ctx.font='20px system-ui';ctx.fillStyle='#b8d7ff';ctx.fillText('Score: '+Math.floor(score),W/2,210);ctx.fillText('Tap JUMP to try again',W/2,250);ctx.textAlign='left'}}
+function tick(){frame++;if(!dead){score+=.12;best=Math.max(best,Math.floor(score));speed=Math.min(10.5,5.6+score/180);p.vy+=.68;p.y+=p.vy;if(p.y+p.size>=floor){p.y=floor-p.size;p.vy=0;p.ground=true}if(!p.ground)p.rot+=.11;else p.rot=Math.round(p.rot/(Math.PI/2))*(Math.PI/2);if(--spawn<=0){add();spawn=Math.max(48,88-Math.floor(speed*2))+Math.random()*22}for(const o of obs)o.x-=speed;obs=obs.filter(o=>o.x+o.w>0);for(const o of obs)if(hit(o)){dead=true;break}for(const q of parts){q.x+=q.vx;q.y+=q.vy;q.vy+=.15;q.life--}parts=parts.filter(q=>q.life>0)}draw();requestAnimationFrame(tick)}
+reset();tick();
+})();
+</script>
+</body></html>
